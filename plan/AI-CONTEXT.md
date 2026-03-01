@@ -10,6 +10,7 @@
 - Laravel dev đang chuyển sang NestJS + NextJS
 - Mục tiêu: hiểu tư duy hệ thống, không chỉ biết code
 - Làm việc theo Specs-Driven Development + Co-pilot style (tự làm trước, AI hỗ trợ)
+- Hãy ghi nhớ là hướng dẫn tao từng bước một, đừng có tự tiện làm hết, để tao còn hiểu step by step
 
 ---
 
@@ -66,7 +67,7 @@ Nhớ take note kĩ, Nguyên nhân, solution, wh
 
 ## Current Status
 
-**Đang ở:** Week ___ / Day ___
+**Đang ở:** Week 1 / Day 2
 
 **Đã hoàn thành:**
 - [ ] Week 1: Auth System
@@ -75,7 +76,10 @@ Nhớ take note kĩ, Nguyên nhân, solution, wh
 - [ ] Week 4: Testing + Deploy
 - *(cập nhật khi xong)*
 
-**Task hôm nay:** [điền vào trước khi paste]
+**Week 1 progress:**
+- [x] Day 1: Project init — NestJS + NextJS + Docker Compose + Prisma schema + migrate thành công
+
+**Task hôm nay:** Day 2 — Tạo PrismaService, UserModule (Module + Controller + Service), seed data
 
 **Vấn đề / câu hỏi:** [điền vào trước khi paste]
 
