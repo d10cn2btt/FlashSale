@@ -272,3 +272,165 @@ npm install dotenv
 
 ---
 
+## [BK-006] Prisma v7 — `PrismaClient` bắt buộc phải truyền driver adapter
+
+**Ngày:** 2026-03-02
+**Tuần:** Week 1 / Day 2
+**Triệu chứng:**
+```
+Expected 1 arguments, but got 0.
+```
+`new PrismaClient()` không nhận 0 argument như Prisma v5.
+
+### Nguyên nhân
+Prisma v7 với generator `prisma-client` (mới) thay đổi hoàn toàn cách kết nối: thay vì tự đọc `DATABASE_URL` từ env, bắt buộc truyền **Driver Adapter** vào constructor. `PrismaClientOptions` là union type — bắt buộc có `adapter` hoặc `accelerateUrl`.
+
+### Solution
+1. Cài package: `npm install @prisma/adapter-pg pg && npm install -D @types/pg`
+2. Cập nhật `PrismaService`:
+```typescript
+import { PrismaPg } from '@prisma/adapter-pg';
+
+constructor() {
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+  super({ adapter });
+}
+```
+3. Tương tự với `seed.ts` — tạo adapter ở module level sau khi load dotenv.
+
+### Why
+Prisma v7 tách biệt hoàn toàn runtime engine khỏi database driver, cho phép dùng nhiều loại adapter khác nhau (serverless, edge, etc.). Đây là hướng kiến trúc mới của Prisma.
+
+---
+
+## [BK-007] `seed.ts` — Cannot find module `'../generated/prisma'`
+
+**Ngày:** 2026-03-02
+**Tuần:** Week 1 / Day 2
+**Triệu chứng:**
+```
+Cannot find module '../generated/prisma' or its corresponding type declarations.
+```
+
+### Nguyên nhân
+Prisma v7 generate ra các file riêng lẻ, không có `index.ts` ở root `generated/prisma/`. `PrismaClient` nằm trong `client.ts`, enums nằm trong `enums.ts`.
+
+### Solution
+```typescript
+// Sai
+import { PrismaClient, Role } from '../generated/prisma';
+
+// Đúng
+import { PrismaClient } from '../generated/prisma/client';
+import { Role, FlashSaleStatus, OrderStatus } from '../generated/prisma/enums';
+```
+
+### Why
+Generator mới của Prisma v7 tổ chức output theo nhiều file để tree-shaking tốt hơn, không bundle tất cả vào một entry point.
+
+---
+
+## [BK-008] `prisma db seed` — seed command lỗi `no seed command configured`
+
+**Ngày:** 2026-03-02
+**Tuần:** Week 1 / Day 2
+**Triệu chứng:**
+```
+No seed command configured
+To seed your database, add a seed property to the migrations section in your Prisma config file.
+```
+
+### Nguyên nhân
+Prisma v7 đọc seed config từ `prisma.config.ts`, không còn đọc từ `package.json > prisma > seed` nữa.
+
+### Solution
+Thêm vào `prisma.config.ts`:
+```typescript
+migrations: {
+  path: "prisma/migrations",
+  seed: "tsx prisma/seed.ts",   // string thẳng, không phải object
+},
+```
+
+**Lưu ý:** Giá trị là `string` thẳng, không phải `{ run: "..." }` — TypeScript sẽ báo lỗi nếu dùng object.
+
+### Why
+Prisma v7 centralize tất cả config vào `prisma.config.ts` thay vì phân tán sang `package.json`.
+
+---
+
+## [BK-009] `prisma db seed` — `ReferenceError: exports is not defined in ES module scope`
+
+**Ngày:** 2026-03-02
+**Tuần:** Week 1 / Day 2
+**Triệu chứng:**
+```
+ReferenceError: exports is not defined in ES module scope
+```
+Xảy ra khi seed command dùng `ts-node --compiler-options {"module":"CommonJS"}`.
+
+### Nguyên nhân
+`tsconfig.json` cấu hình `"module": "nodenext"` (ESM). Ép `ts-node` compile sang CommonJS nhưng runtime vẫn là ESM — conflict.
+
+### Solution
+Dùng `tsx` thay vì `ts-node`:
+```bash
+npm install --save-dev tsx
+```
+Seed command: `tsx prisma/seed.ts` (không cần flag `--compiler-options`).
+
+### Why
+`tsx` tự detect module system và handle cả ESM lẫn CJS, phù hợp hơn với project dùng `nodenext`.
+
+---
+
+## [BK-010] `prisma db seed` — `ECONNREFUSED` do thiếu file `.env`
+
+**Ngày:** 2026-03-02
+**Tuần:** Week 1 / Day 2
+**Triệu chứng:**
+```
+PrismaClientKnownRequestError: code: 'ECONNREFUSED'
+```
+`seed.ts` không kết nối được DB dù Docker đang chạy.
+
+### Nguyên nhân
+File `.env` chưa được tạo — chỉ có `.env.example`. `seed.ts` dùng `import 'dotenv/config'` nên cần file `.env` thật sự tồn tại. `DATABASE_URL` là `undefined` → adapter khởi tạo với connection string rỗng.
+
+### Solution
+```bash
+cp .env.example .env
+```
+File `.env` phải được tạo trước khi chạy bất kỳ Prisma command nào.
+
+### Why
+`.env.example` chỉ là template để commit lên git (không chứa secret thật). `.env` là file thật dùng local, thường bị `.gitignore`.
+
+---
+
+## [BK-011] Sau khi `docker compose down && up` — migration mất, seed lỗi table not found
+
+**Ngày:** 2026-03-02
+**Tuần:** Week 1 / Day 2
+**Triệu chứng:**
+```
+P2021: The table 'public.orders' does not exist in the current database.
+```
+
+### Nguyên nhân
+`docker compose down` xóa container nhưng **volume vẫn còn** (nếu không dùng `-v`). Tuy nhiên khi container mới start, migration state trong DB được giữ lại qua volume. Lỗi này xảy ra vì **trước đó chưa chạy migrate lần nào** (do ECONNREFUSED ở BK-010 ngăn cản).
+
+### Solution
+Chạy migrate trước khi seed:
+```bash
+npx prisma migrate deploy   # apply tất cả migration files lên DB
+npx prisma db seed          # sau đó mới seed
+```
+
+### Why
+- `migrate deploy`: áp dụng migration files đã có vào DB (dùng cho production/staging).
+- `migrate dev`: tạo migration mới + áp dụng (dùng khi đang phát triển, thay đổi schema).
+- Seed chỉ insert data, không tạo tables — tables phải được tạo bởi migration trước.
+
+---
+

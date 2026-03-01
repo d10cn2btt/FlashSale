@@ -1,7 +1,11 @@
-import { PrismaClient, Role, FlashSaleStatus, OrderStatus } from '../generated/prisma';
+import { PrismaClient } from '../generated/prisma/client';
+import { Role, FlashSaleStatus, OrderStatus } from '../generated/prisma/enums';
+import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcryptjs';
+import 'dotenv/config';
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log('🌱 Bắt đầu seed data...');
