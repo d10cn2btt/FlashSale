@@ -56,9 +56,13 @@ Monitoring: Prometheus + Grafana + Loki (Week 12+)
 | Phase 4 | 13-16 | Advanced — Search, Microservices, Security, Perf |
 | Phase 5 | 17-18 | AI Engineering — Specs-driven, Agentic |
 
-Full plan: `d:\SAP\project\learning-plan\`
+Full plan: `plan\`
 
 ---
+
+## Take note trouble shoot
+Hãy take note các lỗi mà tao gặp phải vào 1 file trouble shoot tương ứng của backend & frontend nhé
+Nhớ take note kĩ, Nguyên nhân, solution, wh
 
 ## Current Status
 
