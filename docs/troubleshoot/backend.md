@@ -499,3 +499,39 @@ npx prisma db seed          # sau đó mới seed
 
 ---
 
+## [BK-012] `npx prisma db seed` lỗi `Cannot find module '.prisma/client/default'`
+
+**Ngày:** 2026-03-02
+**Tuần:** Week 1 / Day 3
+**Triệu chứng:**
+```
+Error: Cannot find module '.prisma/client/default'
+Require stack:
+- node_modules\@prisma\client\default.js
+- backend\prisma\seed.ts
+```
+
+### Nguyên nhân
+`@prisma/client` không phải là thư viện tĩnh được cài qua `npm install`. Nó được **generate** ra từ `schema.prisma` vào `node_modules/.prisma/client/`. File này **không được commit vào git** (nằm trong `.gitignore`).
+
+Khi chuyển máy / clone repo mới → folder `.prisma/client/` không tồn tại → seed/app không tìm thấy client.
+
+### Solution
+```bash
+npx prisma generate   # generate Prisma Client từ schema
+npx prisma db seed    # sau đó mới seed được
+```
+
+### Why
+Prisma generate ra code TypeScript/JS tương ứng với schema của mày (types, query builders...). Đây là **code generation**, không phải download package. Mỗi lần thay đổi `schema.prisma` cũng cần chạy lại `prisma generate`.
+
+**Thứ tự chuẩn khi setup máy mới:**
+```
+1. npm install
+2. npx prisma generate        ← tạo Prisma Client
+3. npx prisma migrate deploy  ← tạo tables trong DB
+4. npx prisma db seed         ← insert data
+```
+
+---
+

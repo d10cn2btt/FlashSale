@@ -4,6 +4,7 @@ import { PrismaService } from 'src/common/prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
+import { v4 as uuidv4 } from 'uuid'; // để tạo unique ID cho refresh token (jti)
 
 @Injectable()
 export class AuthService {
@@ -72,6 +73,25 @@ export class AuthService {
       role: user.role,
     });
 
-    return { accessToken };
+    const jti = uuidv4(); // unique identifier cho token này, dùng để revoke nếu cần
+    const family = uuidv4(); // unique identifier cho cả "gia đình" token (access + refresh), dùng để revoke cả 2 nếu cần
+    const refreshToken = this.jwtService.sign({
+      sub: user.id,
+      jti, // thêm jti vào payload của refresh token
+    }, {
+      secret: process.env.JWT_REFRESH_SECRET, // secret riêng cho refresh token
+      expiresIn: '7d', // hardcode để khớp với expiresAt bên dưới
+    });
+
+    await this.prisma.refreshToken.create({
+      data: {
+        userId: user.id,
+        token: refreshToken,
+        family,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // now + 7 ngày, khớp với expiresIn: '7d'
+      }
+    })
+
+    return { accessToken, refreshToken };
   }
 }
