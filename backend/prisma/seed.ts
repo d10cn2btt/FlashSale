@@ -1,5 +1,4 @@
-import { PrismaClient } from '../generated/prisma/client';
-import { Role, FlashSaleStatus, OrderStatus } from '../generated/prisma/enums';
+import { PrismaClient, Role, FlashSaleStatus, OrderStatus } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcryptjs';
 import 'dotenv/config';

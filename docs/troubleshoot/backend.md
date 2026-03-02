@@ -272,6 +272,71 @@ npm install dotenv
 
 ---
 
+## [BK-012] Prisma v7 `prisma-client` generator — `exports is not defined in ES module scope` khi start NestJS
+
+**Ngày:** 2026-03-02
+**Tuần:** Week 1 / Day 3
+**Triệu chứng:**
+```
+ReferenceError: exports is not defined in ES module scope
+    at dist/generated/prisma/client.js:38
+```
+Xảy ra khi chạy `npm run start:dev`.
+
+### Nguyên nhân
+Prisma v7 generator mới (`prisma-client`) generate ra **TypeScript source files** trong `generated/prisma/`. Các file này dùng `@prisma/client/runtime/client` — đây là ESM-only runtime. Khi NestJS compile sang CJS, xảy ra conflict:
+1. `generated/prisma/client.ts` import từ `@prisma/client/runtime/client` (ESM)
+2. NestJS compile → `dist/generated/prisma/client.js` (CJS)
+3. Runtime: CJS file (`exports`) bị Node.js load như ESM → `exports is not defined`
+
+Đổi tsconfig sang commonjs không fix được vì runtime conflict nằm ở Prisma internal, không phải TypeScript output.
+
+### Solution
+Dùng generator cũ `prisma-client-js` thay vì `prisma-client` mới:
+
+**`prisma/schema.prisma`:**
+```prisma
+// Sai (new generator, ESM conflict)
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+// Đúng (old generator, pre-compiled CJS trong node_modules)
+generator client {
+  provider = "prisma-client-js"
+}
+```
+
+Sau đó:
+```bash
+rm -rf generated/      # xóa thư mục generated cũ
+rm -rf dist tsconfig.tsbuildinfo  # xóa cache
+npx prisma generate    # generate vào node_modules/@prisma/client
+```
+
+Import thay đổi:
+```typescript
+// Từ (generated path)
+import { PrismaClient } from '../generated/prisma/client';
+
+// Sang (node_modules)
+import { PrismaClient } from '@prisma/client';
+```
+
+**Lưu ý:** Prisma v7 vẫn bắt buộc adapter dù dùng generator nào:
+```typescript
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
+```
+
+### Why
+- `prisma-client` (mới): generate TypeScript source files → cần compile → ESM runtime conflict với NestJS CJS
+- `prisma-client-js` (cũ): generate pre-compiled CJS files vào `node_modules` → NestJS import trực tiếp → không conflict
+- `prisma-client` là tương lai của Prisma nhưng chưa tương thích tốt với NestJS CJS stack (phù hợp Phase 2+ khi hiểu sâu hơn)
+
+---
+
 ## [BK-006] Prisma v7 — `PrismaClient` bắt buộc phải truyền driver adapter
 
 **Ngày:** 2026-03-02

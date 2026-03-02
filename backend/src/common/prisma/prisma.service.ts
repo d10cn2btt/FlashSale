@@ -1,10 +1,10 @@
 import { Injectable, OnModuleInit, OnApplicationShutdown } from '@nestjs/common';
-import { PrismaClient } from '../../../generated/prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-// NOTE: Prisma v7 dùng Driver Adapter pattern — PrismaClient cần nhận adapter
-// thay vì tự đọc DATABASE_URL. Pool được tạo 1 lần và tái sử dụng.
-// Soft delete filter (deletedAt: null) được xử lý tại từng Service method.
+// Prisma v7: bắt buộc truyền driver adapter vào constructor dù dùng generator nào.
+// prisma-client-js generator → output vào node_modules (pre-compiled CJS, không conflict với NestJS).
+// Soft delete filter (deletedAt: null) xử lý tại từng Service method.
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnApplicationShutdown {
