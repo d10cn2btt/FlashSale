@@ -1,15 +1,23 @@
-import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
-import { v4 as uuidv4 } from 'uuid'; // để tạo unique ID cho refresh token (jti)
+import { v4 as uuidv4 } from 'uuid';
+import { RedisService } from 'src/common/redis/redis.service';
+import { AuthErrors } from 'src/common/errors/auth.errors';
+
+const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 ngày
+const GRACE_PERIOD_SECONDS = 5;
 
 @Injectable()
 export class AuthService {
-  // PrismaService được inject tự động vì PrismaModule là @Global()
-  constructor(private readonly prisma: PrismaService, private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+    private readonly redisService: RedisService,
+  ) {}
 
   async register(dto: RegisterDto) {
     // Bước 1: Check email đã tồn tại chưa
@@ -18,10 +26,7 @@ export class AuthService {
     });
 
     if (existing) {
-      // 409 Conflict — email đã được dùng
-      throw new ConflictException({
-        error: { code: 'EMAIL_TAKEN', message: 'Email đã được sử dụng' },
-      });
+      throw AuthErrors.emailTaken();
     }
 
     // Bước 2: Hash password — cost factor 10 (~100ms, đủ chậm để chống brute-force)
@@ -42,56 +47,106 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto) {
-    // Bước 1: Tìm user theo email
-    const user = await this.prisma.user.findUnique({
-      where: { email: loginDto.email }
-    })
+    const user = await this.prisma.user.findUnique({ where: { email: loginDto.email } });
 
     if (!user) {
-      // 401 Unauthorized — dùng message chung, không nói rõ email hay password sai
-      // tránh user enumeration attack (attacker biết email nào tồn tại)
-      throw new UnauthorizedException({
-        error: { code: 'INVALID_CREDENTIALS', message: 'Email hoặc mật khẩu không đúng' }
-      })
+      // message chung — không phân biệt sai email hay password (tránh user enumeration attack)
+      throw AuthErrors.invalidCredentials();
     }
 
-    // Bước 2: So sánh password
-    const isPasswordValid = await bcrypt.compare(loginDto.password, user.passwordHash)
+    const isPasswordValid = await bcrypt.compare(loginDto.password, user.passwordHash);
     if (!isPasswordValid) {
-      // Cùng message với trên — không phân biệt sai email hay sai password
-      throw new UnauthorizedException({
-        error: { code: 'INVALID_CREDENTIALS', message: 'Email hoặc mật khẩu không đúng' }
-      })
+      throw AuthErrors.invalidCredentials();
     }
 
-    // Bước 3: Generate Access Token
-    // payload dùng `sub` theo chuẩn JWT RFC 7519 (sub = subject = ID của user)
-    // secret và expiresIn đã config trong JwtModule.register() tại auth.module.ts
+    const family = uuidv4(); // mỗi lần login = 1 session mới = 1 family mới
+    return this.generateTokenPair(user, family);
+  }
+
+  async logout(accessToken: string) {
+    // Decode không cần verify — token đã qua JwtAuthGuard rồi
+    const payload = this.jwtService.decode(accessToken) as { jti: string; exp: number; family: string };
+
+    const ttl = payload.exp - Math.floor(Date.now() / 1000);
+    if (ttl > 0) {
+      try {
+        await this.redisService.setBlacklistToken(payload.jti, ttl);
+      } catch {
+        // Redis lỗi → fail-closed: không cho logout giả — security > availability
+        throw AuthErrors.serviceUnavailable();
+      }
+    }
+
+    await this.revokeFamily(payload.family);
+  }
+
+  async refresh(refreshToken: string) {
+    let payload: { sub: string; jti: string };
+    try {
+      payload = this.jwtService.verify(refreshToken, { secret: process.env.JWT_REFRESH_SECRET });
+    } catch {
+      throw AuthErrors.invalidToken();
+    }
+
+    const tokenRecord = await this.prisma.refreshToken.findFirst({
+      where: { token: refreshToken },
+      include: { user: true },
+    });
+
+    if (!tokenRecord) {
+      throw AuthErrors.invalidToken();
+    }
+
+    if (tokenRecord.revokedAt) {
+      const secondsSinceRevoke = (Date.now() - tokenRecord.revokedAt.getTime()) / 1000;
+
+      if (secondsSinceRevoke < GRACE_PERIOD_SECONDS) {
+        // Multi-tab race condition — reject nhẹ, không nuclear
+        throw AuthErrors.tokenRevoked();
+      }
+
+      // Reuse sau grace period → token theft → nuclear: revoke toàn bộ session
+      await this.revokeFamily(tokenRecord.family);
+      throw AuthErrors.tokenReuseDetected();
+    }
+
+    // Rotation: revoke token hiện tại, cấp cặp mới cùng family
+    await this.prisma.refreshToken.update({ where: { id: tokenRecord.id }, data: { revokedAt: new Date() } });
+    return this.generateTokenPair(tokenRecord.user, tokenRecord.family);
+  }
+
+  // ─── Private helpers ────────────────────────────────────────────────────────
+
+  private async generateTokenPair(user: { id: string; email: string; role: string }, family: string) {
     const accessToken = this.jwtService.sign({
       sub: user.id,
       email: user.email,
       role: user.role,
+      jti: uuidv4(),  // để blacklist khi logout
+      family,         // để revoke đúng session khi logout
     });
 
-    const jti = uuidv4(); // unique identifier cho token này, dùng để revoke nếu cần
-    const family = uuidv4(); // unique identifier cho cả "gia đình" token (access + refresh), dùng để revoke cả 2 nếu cần
-    const refreshToken = this.jwtService.sign({
-      sub: user.id,
-      jti, // thêm jti vào payload của refresh token
-    }, {
-      secret: process.env.JWT_REFRESH_SECRET, // secret riêng cho refresh token
-      expiresIn: '7d', // hardcode để khớp với expiresAt bên dưới
-    });
+    const refreshToken = this.jwtService.sign(
+      { sub: user.id, jti: uuidv4() },
+      { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' },
+    );
 
     await this.prisma.refreshToken.create({
       data: {
         userId: user.id,
         token: refreshToken,
         family,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // now + 7 ngày, khớp với expiresIn: '7d'
-      }
-    })
+        expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+      },
+    });
 
     return { accessToken, refreshToken };
+  }
+
+  private revokeFamily(family: string) {
+    return this.prisma.refreshToken.updateMany({
+      where: { family, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
   }
 }

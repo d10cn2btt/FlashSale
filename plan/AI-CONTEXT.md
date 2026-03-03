@@ -61,13 +61,30 @@ Full plan: `plan\`
 
 ---
 
+## Patterns hay dùng
+
+| Pattern | Mô tả | Ví dụ trong project |
+|---|---|---|
+| **Facade** | Bọc subsystem sau interface đơn giản, giấu implementation detail | `redisService.isTokenBlacklisted(jti)` thay vì `redis.get('blacklist:token:' + jti)` |
+| **Encapsulation** | Tập trung key generation / logic lặp lại vào 1 chỗ, tránh hardcode rải rác | Redis key format chỉ define trong `RedisService`, nơi khác gọi method |
+| **Extract Method** | Method dài → tách thành method nhỏ, mỗi cái 1 việc | `canActivate` gọi `checkBlacklist()` thay vì viết inline |
+| **Fail-Closed** | Khi dependency down → từ chối request, ưu tiên security hơn availability | Redis down → 503 thay vì bỏ qua blacklist check |
+| **Minimize try/catch scope** | `try/catch` chỉ bọc đúng I/O call, không bọc business logic | Chỉ bọc `redis.get()`, để `if (isBlacklisted) throw` nằm ngoài |
+| **Refresh Token Rotation** | Mỗi lần refresh → token cũ revoke, cấp token mới. Dùng 1 lần duy nhất | Grace period 5s chống false positive, Token Family để detect theft |
+| **Error Factory** | Tập trung error codes/messages vào 1 file `common/errors/`, không hardcode rải rác | `AuthErrors.invalidCredentials()` thay vì `new UnauthorizedException({...})` ở nhiều chỗ |
+| **Error Factory** | Tập trung error codes/messages vào 1 object, không hardcode rải rác | `AuthErrors.invalidCredentials()` thay vì `new UnauthorizedException({...})` ở nhiều chỗ |
+
+> Chi tiết + code example: `plan/patterns.md`
+
+---
+
 ## Take note trouble shoot
 Hãy take note các lỗi mà tao gặp phải vào 1 file trouble shoot tương ứng của backend & frontend nhé
 Nhớ take note kĩ, Nguyên nhân, solution, wh
 
 ## Current Status
 
-**Đang ở:** Week 1 / Day 2
+**Đang ở:** Week 1 / Day 5
 
 **Đã hoàn thành:**
 - [ ] Week 1: Auth System
@@ -78,8 +95,11 @@ Nhớ take note kĩ, Nguyên nhân, solution, wh
 
 **Week 1 progress:**
 - [x] Day 1: Project init — NestJS + NextJS + Docker Compose + Prisma schema + migrate thành công
+- [x] Day 2: PrismaService (@Global), UserModule (Module + Controller + Service), seed data (4 users + 5 products + flash sales + orders)
+- [x] Day 3: Register + Login (access token 15m + refresh token 7d), JwtStrategy, JwtAuthGuard, @Public() decorator
+- [x] Day 4: RedisModule, Logout (Redis blacklist fail-closed), Refresh Token Rotation (Grace Period 5s + Token Family theft detection), refactor Error Factory
 
-**Task hôm nay:** Day 2 — Tạo PrismaService, UserModule (Module + Controller + Service), seed data
+**Task hôm nay:** Day 5 — NextJS Auth (AuthContext, axios interceptor, protected routes, login/register page)
 
 **Vấn đề / câu hỏi:** [điền vào trước khi paste]
 

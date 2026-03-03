@@ -20,6 +20,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       id: payload.sub,      // sub → id cho dễ dùng
       email: payload.email,
       role: payload.role,
+      jti: payload.jti,    // để blacklist token khi logout
     };
   }
 }

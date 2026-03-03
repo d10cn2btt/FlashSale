@@ -7,6 +7,7 @@ import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { RedisModule } from './common/redis/redis.module';
 
 @Module({
   imports: [
@@ -14,7 +15,9 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
       isGlobal: true, // dùng được ở mọi module, không cần import lại
     }),
     PrismaModule, // @Global() — đăng ký 1 lần, dùng được ở mọi module
-    UserModule, AuthModule,
+    UserModule,
+    AuthModule,
+    RedisModule,
   ],
   controllers: [AppController],
   providers: [AppService, {
