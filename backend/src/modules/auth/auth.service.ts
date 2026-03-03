@@ -36,6 +36,7 @@ export class AuthService {
     const user = await this.prisma.user.create({
       data: {
         email: dto.email,
+        name: dto.name,
         passwordHash,
         // role mặc định CUSTOMER — không cho client tự set
       },
@@ -141,6 +142,14 @@ export class AuthService {
     });
 
     return { accessToken, refreshToken };
+  }
+
+  async getMe(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, name: true, role: true },
+    });
+    return { user };
   }
 
   private revokeFamily(family: string) {

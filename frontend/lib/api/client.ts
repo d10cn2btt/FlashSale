@@ -35,7 +35,8 @@ apiClient.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // _skipRefresh: dùng cho restoreSession — 401 ở đây nghĩa là "chưa login", không cần refresh
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest._skipRefresh) {
       if (isRefreshing) {
         // Đang refresh rồi → cho vào queue, chờ token mới
         return new Promise((resolve) => {
@@ -66,7 +67,10 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch {
         setAccessToken(null);
-        window.location.href = '/login';
+        // Chỉ redirect nếu không phải đang ở /login (tránh vòng lặp vô tận)
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
         return Promise.reject(error);
       } finally {
         isRefreshing = false;

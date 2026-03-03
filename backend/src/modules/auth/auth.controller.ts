@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -36,6 +36,14 @@ export class AuthController {
   async refresh(@Body('refreshToken') refreshToken: string) {
     const data = await this.authService.refresh(refreshToken);
 
+    return { data };
+  }
+
+  @Get('me')
+  async me(@CurrentUser() user: { id: string; email: string; role: string }) {
+    // CurrentUser decorator lấy từ JWT payload (đã verify bởi JwtAuthGuard)
+    // Gọi service để lấy full user data từ DB
+    const data = await this.authService.getMe(user.id);
     return { data };
   }
 }

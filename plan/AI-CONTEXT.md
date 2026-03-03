@@ -80,26 +80,35 @@ Full plan: `plan\`
 
 ## Take note trouble shoot
 Hãy take note các lỗi mà tao gặp phải vào 1 file trouble shoot tương ứng của backend & frontend nhé
-Nhớ take note kĩ, Nguyên nhân, solution, wh
+Nhớ take note kĩ, Nguyên nhân, solution, why
+
+## Take note kỹ thuật
+Hãy take note các kỹ thuật mới của Nestjs, Nextjs vào file docs/nestjs.md docs/nextjs.md tương ứng
+Nhớ giải thích rõ ràng & cho code ví dụ hoặc trường hợp sử dụng để sau này tao học lại
 
 ## Current Status
 
-**Đang ở:** Week 1 / Day 5
+**Đang ở:** Week 1 / Day 6
 
 **Đã hoàn thành:**
-- [ ] Week 1: Auth System
+- [ ] Week 1: Auth System *(in progress — Day 5/7)*
 - [ ] Week 2: Core Features + Race Condition
 - [ ] Week 3: Queue + Async
 - [ ] Week 4: Testing + Deploy
-- *(cập nhật khi xong)*
 
 **Week 1 progress:**
 - [x] Day 1: Project init — NestJS + NextJS + Docker Compose + Prisma schema + migrate thành công
 - [x] Day 2: PrismaService (@Global), UserModule (Module + Controller + Service), seed data (4 users + 5 products + flash sales + orders)
 - [x] Day 3: Register + Login (access token 15m + refresh token 7d), JwtStrategy, JwtAuthGuard, @Public() decorator
 - [x] Day 4: RedisModule, Logout (Redis blacklist fail-closed), Refresh Token Rotation (Grace Period 5s + Token Family theft detection), refactor Error Factory
+- [x] Day 5: NextJS Auth — AuthContext, axios interceptor (request Bearer + response 401→refresh→retry + queue concurrent requests), access token in memory, protected route (dashboard layout), Login page, Register page, redirect sau login
+  - **Bonus fixes:** `/auth/me` endpoint, `name` field add vào User (migration), CORS config, backend port 5000, fix infinite loop `/login` (flag `_skipRefresh`)
 
-**Task hôm nay:** Day 5 — NextJS Auth (AuthContext, axios interceptor, protected routes, login/register page)
+**Task tiếp theo:** Day 6 — Integration & Polish
+- [ ] Test toàn bộ auth flow end-to-end (register → login → dashboard → logout → F5 session restore)
+- [ ] Handle edge cases: token expired mid-session, invalid token
+- [ ] Rate limiting cho `/auth/login` (chống brute force)
+- [ ] Viết README cho project
 
 **Vấn đề / câu hỏi:** [điền vào trước khi paste]
 

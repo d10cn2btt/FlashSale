@@ -26,10 +26,10 @@ async function main() {
   const passwordHash = await bcrypt.hash('Password123!', 10);
 
   const [admin, customer1, customer2, customer3] = await Promise.all([
-    prisma.user.create({ data: { email: 'admin@flashdeal.com', passwordHash, role: Role.ADMIN } }),
-    prisma.user.create({ data: { email: 'alice@example.com', passwordHash, role: Role.CUSTOMER } }),
-    prisma.user.create({ data: { email: 'bob@example.com', passwordHash, role: Role.CUSTOMER } }),
-    prisma.user.create({ data: { email: 'charlie@example.com', passwordHash, role: Role.CUSTOMER } }),
+    prisma.user.create({ data: { email: 'admin@flashdeal.com', name: 'Admin', passwordHash, role: Role.ADMIN } }),
+    prisma.user.create({ data: { email: 'alice@example.com', name: 'Alice', passwordHash, role: Role.CUSTOMER } }),
+    prisma.user.create({ data: { email: 'bob@example.com', name: 'Bob', passwordHash, role: Role.CUSTOMER } }),
+    prisma.user.create({ data: { email: 'charlie@example.com', name: 'Charlie', passwordHash, role: Role.CUSTOMER } }),
   ]);
 
   console.log('✅ Users: admin, alice, bob, charlie');
