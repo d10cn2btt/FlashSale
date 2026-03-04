@@ -1,0 +1,26 @@
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { PassportStrategy } from "@nestjs/passport";
+import { ExtractJwt, Strategy } from "passport-jwt";
+
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor(configService: ConfigService) {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,
+      secretOrKey: configService.getOrThrow<string>('JWT_SECRET'),
+    });
+  }
+
+  async validate(payload: any) {
+    // payload là object đã được decode từ JWT
+    // return về đây sẽ được gắn vào request.user
+    return {
+      id: payload.sub,      // sub → id cho dễ dùng
+      email: payload.email,
+      role: payload.role,
+      jti: payload.jti,    // để blacklist token khi logout
+    };
+  }
+}

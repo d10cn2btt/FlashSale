@@ -39,3 +39,5 @@ redis_data/
 
 # Test coverage
 coverage/
+
+.history

@@ -1,18 +1,14 @@
 {
   "name": "flashdeal",
   "private": true,
-  "workspaces": [
-    "backend",
-    "frontend"
-  ],
   "scripts": {
-    "dev:backend": "npm run start:dev --workspace=backend",
-    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:backend": "cd backend && npm run start:dev",
+    "dev:frontend": "cd frontend && npm run dev",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
-    "prisma:migrate": "npm run prisma:migrate --workspace=backend",
-    "prisma:studio": "npm run prisma:studio --workspace=backend"
+    "prisma:migrate": "cd backend && npm run prisma:migrate",
+    "prisma:studio": "cd backend && npm run prisma:studio"
   },
   "engines": {
     "node": ">=18.0.0"
