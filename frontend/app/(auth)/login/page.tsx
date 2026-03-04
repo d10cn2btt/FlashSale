@@ -2,16 +2,22 @@
 
 import { useAuth } from '@/contexts/auth.context';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, isLoading]);
 
   const handleSubmit = async () => {
     setError('');
@@ -19,9 +25,9 @@ export default function LoginPage() {
     try {
       await login({ email, password });
       // login() dùng flushSync → state đã commit → navigate an toàn
-      router.replace('/dashboard');
-    } catch (err) {
-      setError('Email hoặc mật khẩu không đúng');
+      router.push('/dashboard');
+    } catch (err: any) {
+      setError(err.message ?? 'Đăng nhập thất bại, thử lại sau');
     } finally {
       setIsLoading(false);
     }

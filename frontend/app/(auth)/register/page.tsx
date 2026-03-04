@@ -21,8 +21,8 @@ export default function RegisterPage() {
     try {
       await register({ name, email, password });
       router.push('/login');
-    } catch {
-      setError('Đăng ký không thành công');
+    } catch (err: any) {
+      setError(err.message ?? 'Đăng ký không thành công, thử lại sau');
     } finally {
       setIsLoading(false);
     }

@@ -8,6 +8,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RedisModule } from './common/redis/redis.module';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
@@ -18,11 +19,20 @@ import { RedisModule } from './common/redis/redis.module';
     UserModule,
     AuthModule,
     RedisModule,
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 60 giây (milliseconds)
+        limit: 5, // tối đa 5 request trong 60s
+      },
+    ]),
   ],
   controllers: [AppController],
-  providers: [AppService, {
-    provide: APP_GUARD,
-    useClass: JwtAuthGuard, // đăng ký global guard — áp dụng cho tất cả route
-  }],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard, // đăng ký global guard — áp dụng cho tất cả route
+    },
+  ],
 })
 export class AppModule {}

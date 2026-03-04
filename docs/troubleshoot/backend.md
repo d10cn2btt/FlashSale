@@ -499,6 +499,143 @@ npx prisma db seed          # sau đó mới seed
 
 ---
 
+## [BK-013] `cookie-parser` import lỗi `This expression is not callable`
+
+**Ngày:** 2026-03-04  
+**Tuần:** Week 1 / Day 6  
+**Triệu chứng:**
+```
+This expression is not callable.
+Type 'typeof cookieParser' has no call signatures.
+```
+Lỗi xảy ra khi gọi `app.use(cookieParser())` trong `main.ts`.
+
+---
+
+### Nguyên nhân
+
+`cookie-parser` là CommonJS module. Cách import ảnh hưởng đến type:
+
+```ts
+import * as cookieParser from 'cookie-parser';
+// → import toàn bộ module namespace dưới dạng object
+// → type là `typeof cookieParser` = module object, KHÔNG callable
+
+import cookieParser from 'cookie-parser';
+// → import default export (chính là function)
+// → callable ✓
+```
+
+---
+
+### Solution
+
+Dùng **default import** thay vì namespace import:
+
+```ts
+// main.ts
+import cookieParser from 'cookie-parser'; // ✓
+
+app.use(cookieParser());
+```
+
+**Điều kiện:** `tsconfig.json` phải có `esModuleInterop: true` và `allowSyntheticDefaultImports: true` (NestJS mặc định đã có).
+
+---
+
+### Why
+
+| Cách import | Kết quả | Dùng khi |
+|---|---|---|
+| `import * as x from 'pkg'` | Import namespace object | Package không có default export |
+| `import x from 'pkg'` | Import default export | Package export một function/class chính |
+| `esModuleInterop: true` | TS tự wrap CommonJS `module.exports` thành default export | Cho phép dùng default import với CommonJS packages |
+
+---
+
+## [BK-014] `app.use(cookieParser())` đặt sau `app.listen()` → middleware không có tác dụng
+
+**Ngày:** 2026-03-04  
+**Tuần:** Week 1 / Day 6  
+**Triệu chứng:**
+
+`req.cookies` luôn là `undefined` dù đã đăng ký `cookie-parser`.
+
+---
+
+### Nguyên nhân
+
+Middleware được đăng ký **sau** khi `app.listen()` đã chạy:
+
+```ts
+await app.listen(5000); // app bắt đầu nhận request
+app.use(cookieParser()); // quá muộn — request đến trước khi middleware được đăng ký
+```
+
+---
+
+### Solution
+
+Luôn đăng ký middleware **trước** `app.listen()`:
+
+```ts
+app.use(cookieParser()); // ✓ trước
+app.useGlobalPipes(...);
+await app.listen(5000); // sau cùng
+```
+
+---
+
+### Why
+
+NestJS build middleware pipeline khi `listen()` được gọi. Bất kỳ `app.use()` nào sau `listen()` đều bị bỏ qua vì pipeline đã được lock lại.
+
+---
+
+## [BK-015] `@Res() res: Response` dùng Web API type thay vì Express type
+
+**Ngày:** 2026-03-04  
+**Tuần:** Week 1 / Day 6  
+**Triệu chứng:**
+```
+Property 'cookie' does not exist on type 'Response'.
+```
+
+---
+
+### Nguyên nhân
+
+TypeScript resolve `Response` về **Web API `Response`** (global type từ `lib.dom.d.ts`) thay vì **Express `Response`**. Web API `Response` không có method `cookie()` hay `clearCookie()`.
+
+```ts
+// ❌ Sai — dùng Web API Response (global)
+async login(@Res({ passthrough: true }) res: Response) {
+
+// ✓ Đúng — import Express Response
+import { Response } from 'express';
+async login(@Res({ passthrough: true }) res: Response) {
+```
+
+---
+
+### Solution
+
+Import `Response` từ `express`:
+
+```ts
+import { Response } from 'express';
+```
+
+---
+
+### Why
+
+NestJS dùng Express làm HTTP adapter. `Response` object trong controller thực chất là Express `res` — phải type đúng mới access được các method của Express như `cookie()`, `clearCookie()`, `redirect()`...
+
+`@Res({ passthrough: true })` cho phép dùng `res` để set cookie/header mà vẫn để NestJS serialize return value bình thường (không cần gọi `res.json()` thủ công).
+
+---
+
 ## [BK-012] `npx prisma db seed` lỗi `Cannot find module '.prisma/client/default'`
 
 **Ngày:** 2026-03-02

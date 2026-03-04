@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -13,6 +14,8 @@ async function bootstrap() {
     credentials: true,
   });
 
+  app.use(cookieParser()); // parse Cookie header → req.cookies
+
   // Bật validation globally — @IsEmail(), @MinLength()... mới có tác dụng
   // whitelist: true → tự động strip các field không có trong DTO (bảo mật)
   // forbidNonWhitelisted: true → throw lỗi nếu client gửi field lạ
@@ -21,4 +24,3 @@ async function bootstrap() {
   await app.listen(process.env.PORT ?? 5000);
 }
 bootstrap();
-

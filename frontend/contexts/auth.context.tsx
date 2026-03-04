@@ -26,8 +26,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const restoreSession = async () => {
       try {
-        // _skipRefresh: nếu 401 ở đây thì chỉ là chưa login, không cần thử refresh
-        const response = await apiClient.get('/auth/me', { _skipRefresh: true } as any);
+        // Không dùng _skipRefresh ở đây:
+        // F5 → accessToken bị clear → /auth/me trả 401
+        // → interceptor tự gọi /auth/refresh bằng httpOnly cookie
+        // → nếu còn hợp lệ: nhận access token mới → retry /auth/me thành công
+        // → nếu hết hạn: refresh fail → catch bên dưới → user = null
+        const response = await apiClient.get('/auth/me');
         setUser(response.data.data.user);
       } catch {
         // 401 không phải lỗi - chỉ là chưa đăng nhập

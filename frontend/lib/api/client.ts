@@ -12,6 +12,7 @@ export const getAccessToken = () => accessToken;
 
 export const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
+  withCredentials: true, // bắt buộc để gửi httpOnly cookie (refresh token)
 });
 
 apiClient.interceptors.request.use((config) => {
@@ -67,8 +68,9 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch {
         setAccessToken(null);
-        // Chỉ redirect nếu không phải đang ở /login (tránh vòng lặp vô tận)
-        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        // Chỉ redirect nếu không phải đang ở /login hoặc /register (tránh vòng lặp vô tận)
+        const publicPaths = ['/login', '/register'];
+        if (typeof window !== 'undefined' && !publicPaths.includes(window.location.pathname)) {
           window.location.href = '/login';
         }
         return Promise.reject(error);
@@ -77,6 +79,27 @@ apiClient.interceptors.response.use(
       }
     }
 
+    const message = extractErrorMessage(error.response?.data);
+    if (message) {
+      error.message = message;
+    }
+
     return Promise.reject(error);
   },
 );
+
+function extractErrorMessage(data: any): string | null {
+  if (!data) return null;
+
+  // Format 1: Custom error { error: { message } }
+  if (typeof data.error?.message === 'string') {
+    return data.error.message;
+  }
+
+  // Format 2: ValidationPipe { message: string[] }
+  if (Array.isArray(data.message) && data.message.length > 0) {
+    return data.message[0]; // lấy lỗi đầu tiên
+  }
+
+  return null;
+}

@@ -4,7 +4,96 @@
 
 ---
 
-*Chưa có lỗi nào được ghi nhận. Sẽ cập nhật khi phát sinh.*
+---
+
+## [FE-002] F5 (refresh trang) bị redirect về `/login` dù đã đăng nhập
+
+**Ngày:** 2026-03-04  
+**Tuần:** Week 1 / Day 6  
+**Triệu chứng:**
+
+Login thành công → vào dashboard → F5 → bị redirect về `/login`. DevTools → Application → Cookies: trống.
+
+---
+
+### Nguyên nhân
+
+Có 3 lỗi kết hợp:
+
+**1. Backend trả `refreshToken` trong body, FE không lưu:**
+```ts
+// auth.service.ts trả về:
+return { accessToken, refreshToken }; // trong body
+
+// auth.context.tsx chỉ lấy accessToken, bỏ qua refreshToken:
+setAccessToken(loginRes.data.data.accessToken); // refreshToken bị discard!
+```
+
+**2. Frontend gọi `/auth/refresh` với body rỗng:**
+```ts
+// client.ts interceptor:
+await axios.post('/auth/refresh', {}, { withCredentials: true });
+//                               ↑ body rỗng!
+
+// Trong khi backend expect refreshToken trong body:
+async refresh(@Body('refreshToken') refreshToken: string) // undefined → verify fail
+```
+
+**3. `apiClient` thiếu `withCredentials: true`:**
+
+Dù backend có set `Set-Cookie` header, browser không lưu cookie vì request login không có `withCredentials: true`. Trong Axios, `withCredentials` chỉ được set trên call `/auth/refresh`, không set globally.
+
+---
+
+### Solution
+
+**Backend:** Chuyển từ trả `refreshToken` trong body → set httpOnly cookie:
+
+```ts
+// auth.controller.ts
+async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
+  const { accessToken, refreshToken } = await this.authService.login(loginDto);
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
+    path: '/api/v1/auth',
+  });
+  return { data: { accessToken } };
+}
+
+// refresh: đọc từ cookie thay vì body
+async refresh(@Req() req: Request) {
+  const refreshToken = req.cookies['refreshToken'];
+  ...
+}
+
+// logout: clear cookie
+async logout(..., @Res({ passthrough: true }) res: Response) {
+  res.clearCookie('refreshToken', { path: '/api/v1/auth' });
+  ...
+}
+```
+
+**Frontend:** Set `withCredentials: true` globally trên `apiClient`:
+
+```ts
+export const apiClient = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  withCredentials: true, // ← gửi/nhận cookie cho mọi request
+});
+```
+
+---
+
+### Why
+
+| Vấn đề | Lý do kỹ thuật |
+|---|---|---|
+| Cookie không được lưu | Axios mặc định không gửi credentials cho cross-origin request. Phải set `withCredentials: true` |
+| Browser block Set-Cookie | Cross-origin (port 3000 → 5000): browser chặn cookie nếu không có `withCredentials` và CORS `credentials: true` |
+| httpOnly cookie an toàn hơn body | JS không đọc được → XSS không thể đánh cắp refresh token |
+| `path: '/api/v1/auth'` | Cookie chỉ gửi đến `/auth/*`, không gửi đi lung tung vào mọi API endpoint |
 
 ---
 
