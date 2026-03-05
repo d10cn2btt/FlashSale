@@ -9,6 +9,8 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RedisModule } from './common/redis/redis.module';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ProductModule } from './modules/product/product.module';
+import { FlashSaleModule } from './modules/flash-sale/flash-sale.module';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { ThrottlerModule } from '@nestjs/throttler';
     UserModule,
     AuthModule,
     RedisModule,
+    ProductModule,
+    FlashSaleModule,
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 60 giây (milliseconds)

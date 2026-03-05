@@ -167,3 +167,70 @@ app.enableCors({
 ```
 
 ---
+## [NS-004] `implements CanActivate` — Khi nào cần, khi nào không?
+
+**Tuần:** Week 2 / Day 1
+
+### Vấn đề
+
+Tự viết Guard từ đầu thì cần `implements CanActivate`, nhưng `JwtAuthGuard` lại không thấy khai báo — tại sao?
+
+### Giải thích
+
+NestJS có 2 cách tạo Guard:
+
+**Cách 1: Extends từ class có sẵn** (như `AuthGuard` của `@nestjs/passport`)
+
+```ts
+// AuthGuard từ passport ĐÃ implements CanActivate sẵn rồi
+export class JwtAuthGuard extends AuthGuard('jwt') {
+  // Kế thừa CanActivate qua extends → không cần khai báo lại
+  async canActivate(context: ExecutionContext) {
+    await super.canActivate(context); // gọi logic JWT validation của passport
+    // ... thêm logic custom (check blacklist, v.v.)
+    return true;
+  }
+}
+```
+
+**Cách 2: Tự viết từ đầu** (không extends gì)
+
+```ts
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+
+@Injectable()
+export class RolesGuard implements CanActivate { // ← BẮT BUỘC khai báo tường minh
+  canActivate(context: ExecutionContext): boolean {
+    // ... logic
+  }
+}
+```
+
+### Tại sao `implements CanActivate` quan trọng?
+
+1. **TypeScript enforcement** — Nếu viết sai tên method (`canActivte` thay vì `canActivate`), TypeScript báo lỗi ngay lúc compile
+2. **NestJS DI nhận diện** — NestJS biết class này là Guard, có thể dùng với `@UseGuards()`
+3. **Tường minh (Explicit intent)** — Code tự document: "class này là Guard" không cần đọc thêm
+
+### So sánh
+
+| | `extends AuthGuard` | `implements CanActivate` |
+|---|---|---|
+| Khi nào | Dùng passport strategy (JWT, OAuth) | Tự viết Guard hoàn toàn |
+| `CanActivate` | Kế thừa qua `extends` | Phải khai báo tường minh |
+| `canActivate()` | Override method của parent | Implement method của interface |
+| Ví dụ trong project | `JwtAuthGuard` | `RolesGuard` |
+
+### Interface là gì trong context này?
+
+```ts
+// CanActivate interface định nghĩa "contract":
+interface CanActivate {
+  canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean>;
+}
+
+// Class implement interface → phải có đúng method này
+// Nếu không → TypeScript lỗi compile → catch bug sớm
+```
+
+---
