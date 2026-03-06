@@ -5,15 +5,6 @@
 
 ---
 
-## Về tao
-
-- Laravel dev đang chuyển sang NestJS + NextJS
-- Mục tiêu: hiểu tư duy hệ thống, không chỉ biết code
-- Làm việc theo Specs-Driven Development + Co-pilot style (tự làm trước, AI hỗ trợ)
-- Hãy ghi nhớ là hướng dẫn tao từng bước một, đừng có tự tiện làm hết, để tao còn hiểu step by step
-
----
-
 ## Project đang làm: FlashDeal
 
 **Mini Flash Sale Platform** — platform bán hàng giảm giá trong thời gian giới hạn.
@@ -21,29 +12,9 @@
 **Mục đích học:** Buộc phải đối mặt với các vấn đề scaling thật:
 race condition, caching, distributed lock, queue, horizontal scaling.
 
-### Tech Stack
-```
-Backend:    NestJS + Prisma + PostgreSQL
-Cache:      Redis (cache + distributed lock + pub/sub)
-Queue:      BullMQ (chạy trên Redis)
-Frontend:   NextJS + TailwindCSS
-Auth:       JWT + Refresh Token + Redis Blacklist
-Search:     Elasticsearch (Week 13+)
-DevOps:     Docker Compose (local), GitHub Actions CI/CD
-Monitoring: Prometheus + Grafana + Loki (Week 12+)
-```
-
 ### Chạy local hoàn toàn bằng Docker Compose
 - PostgreSQL, Redis, MailHog (fake SMTP), pgAdmin
 - Không cần cloud cho 10 tuần đầu
-
-### Conventions
-- Error format: `{ error: { code: string, message: string } }`
-- Success format: `{ data: T }` hoặc `{ data: T[], meta: { total, page } }`
-- API prefix: `/api/v1/`
-- Auth: Bearer JWT trong Authorization header
-- Soft delete: `deletedAt` timestamp
-- All tables có: `createdAt`, `updatedAt`
 
 ---
 
@@ -77,14 +48,6 @@ Full plan: `plan\`
 > Chi tiết + code example: `plan/patterns.md`
 
 ---
-
-## Take note trouble shoot
-Hãy take note các lỗi mà tao gặp phải vào 1 file trouble shoot tương ứng của backend & frontend nhé
-Nhớ take note kĩ, Nguyên nhân, solution, why
-
-## Take note kỹ thuật
-Hãy take note các kỹ thuật mới của Nestjs, Nextjs vào file docs/nestjs.md docs/nextjs.md tương ứng
-Nhớ giải thích rõ ràng & cho code ví dụ hoặc trường hợp sử dụng để sau này tao học lại
 
 ## Current Status
 

@@ -1,23 +1,42 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma/prisma.service';
+import { CacheService } from 'src/common/cache/cache.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 
+const TTL = 5 * 60; // 5 phút
+
+const CacheKeys = {
+  list: () => 'products:list',
+  detail: (id: string) => `products:${id}`,
+};
+
 @Injectable()
 export class ProductService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: CacheService,
+  ) {}
 
   async findAll() {
+    const cached = await this.cache.get(CacheKeys.list());
+    if (cached) return cached;
+
     const products = await this.prisma.product.findMany({
       where: { deletedAt: null },
       include: { inventory: true },
       orderBy: { createdAt: 'desc' },
     });
 
-    return { data: products };
+    const result = { data: products };
+    await this.cache.set(CacheKeys.list(), result, TTL);
+    return result;
   }
 
   async findOne(id: string) {
+    const cached = await this.cache.get(CacheKeys.detail(id));
+    if (cached) return cached;
+
     const product = await this.prisma.product.findFirst({
       where: { id, deletedAt: null },
       include: { inventory: true },
@@ -29,7 +48,9 @@ export class ProductService {
       });
     }
 
-    return { data: product };
+    const result = { data: product };
+    await this.cache.set(CacheKeys.detail(id), result, TTL);
+    return result;
   }
 
   async create(dto: CreateProductDto) {
@@ -50,6 +71,7 @@ export class ProductService {
       });
     });
 
+    await this.cache.del(CacheKeys.list());
     return { data: product };
   }
 
@@ -78,6 +100,7 @@ export class ProductService {
       });
     });
 
+    await this.cache.del(CacheKeys.list(), CacheKeys.detail(id));
     return { data: product };
   }
 
@@ -90,6 +113,7 @@ export class ProductService {
       data: { deletedAt: new Date() },
     });
 
+    await this.cache.del(CacheKeys.list(), CacheKeys.detail(id));
     return { data: { message: 'Product deleted successfully' } };
   }
 }

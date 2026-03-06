@@ -8,6 +8,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RedisModule } from './common/redis/redis.module';
+import { CacheModule } from './common/cache/cache.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ProductModule } from './modules/product/product.module';
 import { FlashSaleModule } from './modules/flash-sale/flash-sale.module';
@@ -21,6 +22,7 @@ import { FlashSaleModule } from './modules/flash-sale/flash-sale.module';
     UserModule,
     AuthModule,
     RedisModule,
+    CacheModule,
     ProductModule,
     FlashSaleModule,
     ThrottlerModule.forRoot([

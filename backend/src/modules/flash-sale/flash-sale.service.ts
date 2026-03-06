@@ -1,12 +1,23 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma/prisma.service';
+import { CacheService } from 'src/common/cache/cache.service';
 import { CreateFlashSaleDto } from './dto/create-flash-sale.dto';
+
+const CacheKeys = {
+  active: () => 'flash-sales:active',
+};
 
 @Injectable()
 export class FlashSaleService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: CacheService,
+  ) {}
 
   async findActive() {
+    const cached = await this.cache.get(CacheKeys.active());
+    if (cached) return cached;
+
     const now = new Date();
 
     const flashSales = await this.prisma.flashSale.findMany({
@@ -20,7 +31,9 @@ export class FlashSaleService {
       orderBy: { endAt: 'asc' }, // sắp hết hạn trước
     });
 
-    return { data: flashSales };
+    const result = { data: flashSales };
+    await this.cache.set(CacheKeys.active(), result, 30); // TTL 30s — data thay đổi thường xuyên
+    return result;
   }
 
   async findOne(id: string) {
@@ -72,6 +85,7 @@ export class FlashSaleService {
       include: { product: true },
     });
 
+    await this.cache.del(CacheKeys.active());
     return { data: flashSale };
   }
 }
