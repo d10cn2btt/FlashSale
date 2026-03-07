@@ -566,6 +566,101 @@ return children;                   // (3) authenticated → render
 
 ---
 
+---
+
+## Week 2 / Day 5 — Flash Sale UI + Order flow
+
+---
+
+### 1. Server Component vs Client Component — khi nào dùng cái nào?
+
+**Rule đơn giản:**
+
+| Cần gì | Dùng |
+|--------|------|
+| `useState`, `useEffect`, hook bất kỳ | Client Component (`'use client'`) |
+| `onClick`, `onChange`, event handler | Client Component |
+| Dùng Context (`useAuth()`, v.v.) | Client Component |
+| Chỉ render HTML tĩnh, không state | Server Component (mặc định) |
+| Fetch DB trực tiếp, SEO | Server Component |
+
+**Trong FlashDeal — tất cả dashboard pages là Client Component vì:**
+- Cần `accessToken` từ memory (chỉ có trên browser)
+- Cần `useState` để quản lý loading / data / error
+- Cần `useAuth()` để check authenticated
+
+**Server Component duy nhất trong project hiện tại:** `app/page.tsx` — landing page tĩnh, không fetch, không state.
+
+---
+
+### 2. API Service Layer pattern
+
+Tách API calls ra file riêng trong `lib/api/`:
+
+```
+lib/api/
+  client.ts       ← axios instance + interceptors (HOW to request)
+  flash-sale.ts   ← flash sale endpoints (WHAT to request)
+  order.ts        ← order endpoints
+```
+
+**`client.ts`** lo transport: gắn Bearer token, handle 401, retry với refresh token.
+**`flash-sale.ts`** lo business: endpoint nào, data shape nào.
+
+```ts
+// flash-sale.ts
+export const flashSaleApi = {
+  getActive: () => apiClient.get('/flash-sales/active').then(r => r.data),
+  getById: (id: string) => apiClient.get(`/flash-sales/${id}`).then(r => r.data),
+};
+
+// Dùng trong page — không cần biết apiClient là gì
+const data = await flashSaleApi.getActive();
+```
+
+Tương tự NestJS: `PrismaService` = transport, `ProductService` = business logic.
+
+---
+
+### 3. `setState` callback form — tránh stale closure
+
+```ts
+// ❌ Có thể dùng flashSales cũ (stale closure)
+setFlashSales([...flashSales, newItem]);
+
+// ✅ prev luôn là giá trị mới nhất tại thời điểm setter chạy
+setFlashSales((prev) => prev.map((s) =>
+  s.id === id ? { ...s, soldQty: s.soldQty + 1 } : s
+));
+```
+
+**Stale closure xảy ra khi:** function được tạo tại thời điểm A, nhưng chạy tại thời điểm B — lúc đó biến `flashSales` trong closure vẫn là giá trị tại A.
+Callback form nhận `prev` từ React → luôn đúng.
+
+---
+
+### 4. Local state update vs refetch
+
+Sau khi mutation (mua hàng thành công), có 2 cách update UI:
+
+```ts
+// Cách 1: Refetch — gọi lại API lấy data mới
+await orderApi.create(flashSaleId);
+const fresh = await flashSaleApi.getActive(); // thêm 1 round trip
+setFlashSales(fresh.data);
+
+// Cách 2: Local update — tính toán state mới ngay trên client
+await orderApi.create(flashSaleId);
+setFlashSales((prev) =>
+  prev.map((s) => s.id === flashSaleId ? { ...s, soldQty: s.soldQty + 1 } : s)
+);
+```
+
+**Cách 2 dùng khi:** biết chính xác data thay đổi như thế nào (soldQty +1).
+**Cách 1 dùng khi:** mutation phức tạp, không chắc server thay đổi gì.
+
+---
+
 #### `context ?? {}` là thừa khi dùng `useAuth()`
 
 ```tsx

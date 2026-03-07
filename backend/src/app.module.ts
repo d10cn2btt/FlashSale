@@ -12,6 +12,7 @@ import { CacheModule } from './common/cache/cache.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ProductModule } from './modules/product/product.module';
 import { FlashSaleModule } from './modules/flash-sale/flash-sale.module';
+import { OrderModule } from './modules/order/order.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { FlashSaleModule } from './modules/flash-sale/flash-sale.module';
     CacheModule,
     ProductModule,
     FlashSaleModule,
+    OrderModule,
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 60 giây (milliseconds)

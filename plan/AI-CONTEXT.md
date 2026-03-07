@@ -51,7 +51,7 @@ Full plan: `plan\`
 
 ## Current Status
 
-**Đang ở:** Week 2 / Day 1
+**Đang ở:** Week 2 / Day 5
 
 **Đã hoàn thành:**
 - [x] Week 1: Auth System ✅
@@ -77,17 +77,14 @@ Full plan: `plan\`
 
 **Week 2 progress:**
 - [x] Day 1: Product Module CRUD + Flash Sale Module + RolesGuard
-- [ ] Day 2: Redis Cache-Aside pattern + CacheService + Benchmark
-- [ ] Day 3: Order flow + Tạo race condition có chủ ý
-- [ ] Day 4: Fix race condition — DB Optimistic Lock → Lua script atomic
-- [ ] Day 5: NextJS Flash Sale UI + Order flow UI
+- [x] Day 2: Redis Cache-Aside pattern + CacheService (ProductService + FlashSaleService)
+- [x] Day 3: Order flow (POST /orders, GET /orders/my)
+- [x] Day 4: Fix race condition — DB Optimistic Lock (atomic UPDATE WHERE soldQty < maxQty). Verified bằng script 20 concurrent requests → soldQty đúng maxQty, không over-sell
+- [x] Day 5: NextJS Flash Sale UI + Order flow UI (flash-sales page, orders page, navbar + logout, fix UI)
 - [ ] Day 6: E2E Testing + Global exception filter
 - [ ] Day 7: Deep Dive Review
 
-**Task tiếp theo:** Day 1 — Product Module + Flash Sale Module
-- [ ] GET/POST/PUT/DELETE /products với RolesGuard
-- [ ] POST /flash-sales + GET /flash-sales/active
-- [ ] RolesGuard + @Roles('admin') decorator
+**Task tiếp theo:** Day 6 — E2E Testing + Global exception filter
 
 **Vấn đề / câu hỏi:** [điền vào trước khi paste]
 

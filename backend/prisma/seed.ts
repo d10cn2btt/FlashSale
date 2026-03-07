@@ -38,11 +38,35 @@ async function main() {
   // 2. PRODUCTS + INVENTORY
   // ─────────────────────────────────────────
   const productsData = [
-    { name: 'iPhone 15 Pro',       description: 'Apple iPhone 15 Pro 256GB',              price: 28990000, imageUrl: 'https://picsum.photos/seed/iphone/400/400',   stock: 100 },
-    { name: 'Samsung Galaxy S24',  description: 'Samsung Galaxy S24 Ultra 512GB',          price: 26990000, imageUrl: 'https://picsum.photos/seed/samsung/400/400',  stock: 80  },
-    { name: 'Sony WH-1000XM5',     description: 'Tai nghe chống ồn cao cấp',               price: 7490000,  imageUrl: 'https://picsum.photos/seed/sony/400/400',    stock: 200 },
-    { name: 'MacBook Air M3',      description: 'Apple MacBook Air M3 13-inch 8GB 256GB',  price: 32990000, imageUrl: 'https://picsum.photos/seed/macbook/400/400',  stock: 50  },
-    { name: 'Logitech MX Master 3S', description: 'Chuột không dây cao cấp',              price: 2290000,  imageUrl: 'https://picsum.photos/seed/logitech/400/400', stock: 300 },
+    // Smartphones
+    { name: 'iPhone 15 Pro',           description: 'Apple iPhone 15 Pro 256GB, chip A17 Pro, camera 48MP',           price: 28990000, imageUrl: 'https://picsum.photos/seed/iphone15pro/400/400',    stock: 100 },
+    { name: 'iPhone 14',               description: 'Apple iPhone 14 128GB, chip A15 Bionic',                          price: 19990000, imageUrl: 'https://picsum.photos/seed/iphone14/400/400',       stock: 120 },
+    { name: 'Samsung Galaxy S24 Ultra',description: 'Samsung Galaxy S24 Ultra 512GB, S-Pen, camera 200MP',             price: 31990000, imageUrl: 'https://picsum.photos/seed/s24ultra/400/400',       stock: 80  },
+    { name: 'Samsung Galaxy A55',      description: 'Samsung Galaxy A55 5G 256GB, màn hình AMOLED 6.6"',               price: 9490000,  imageUrl: 'https://picsum.photos/seed/a55/400/400',            stock: 150 },
+    { name: 'Xiaomi 14',               description: 'Xiaomi 14 256GB, Snapdragon 8 Gen 3, Leica camera',               price: 22990000, imageUrl: 'https://picsum.photos/seed/xiaomi14/400/400',       stock: 90  },
+    { name: 'OPPO Reno 12 Pro',        description: 'OPPO Reno 12 Pro 256GB, camera AI 50MP, sạc nhanh 80W',           price: 12490000, imageUrl: 'https://picsum.photos/seed/reno12/400/400',         stock: 110 },
+
+    // Laptops & Tablets
+    { name: 'MacBook Air M3',          description: 'Apple MacBook Air M3 13-inch 8GB 256GB, mỏng nhẹ',                price: 32990000, imageUrl: 'https://picsum.photos/seed/macbookairm3/400/400',   stock: 50  },
+    { name: 'MacBook Pro M3 Pro',      description: 'Apple MacBook Pro M3 Pro 14-inch 18GB 512GB',                     price: 52990000, imageUrl: 'https://picsum.photos/seed/macbookpro/400/400',    stock: 30  },
+    { name: 'Dell XPS 15',             description: 'Dell XPS 15 Intel Core i7-13700H 16GB 512GB OLED',                price: 42990000, imageUrl: 'https://picsum.photos/seed/dellxps/400/400',        stock: 40  },
+    { name: 'ASUS ZenBook 14 OLED',    description: 'ASUS ZenBook 14 OLED Ryzen 7 7730U 16GB 512GB',                  price: 22990000, imageUrl: 'https://picsum.photos/seed/zenbook/400/400',        stock: 60  },
+    { name: 'iPad Air M2',             description: 'Apple iPad Air M2 11-inch 128GB Wi-Fi',                           price: 17990000, imageUrl: 'https://picsum.photos/seed/ipadair/400/400',        stock: 70  },
+
+    // Audio
+    { name: 'Sony WH-1000XM5',        description: 'Sony WH-1000XM5 - Tai nghe chống ồn hàng đầu, 30h pin',           price: 7490000,  imageUrl: 'https://picsum.photos/seed/sonywh/400/400',         stock: 200 },
+    { name: 'AirPods Pro 2',           description: 'Apple AirPods Pro 2nd Gen, ANC, Transparency mode, MagSafe',      price: 6490000,  imageUrl: 'https://picsum.photos/seed/airpodspro/400/400',     stock: 180 },
+    { name: 'Jabra Evolve2 75',        description: 'Jabra Evolve2 75 - Tai nghe văn phòng cao cấp, hybrid ANC',       price: 8990000,  imageUrl: 'https://picsum.photos/seed/jabra/400/400',          stock: 80  },
+
+    // Accessories & Peripherals
+    { name: 'Logitech MX Master 3S',   description: 'Logitech MX Master 3S - Chuột không dây, 8K DPI, silent click',  price: 2290000,  imageUrl: 'https://picsum.photos/seed/mxmaster/400/400',       stock: 300 },
+    { name: 'Keychron K2 Pro',         description: 'Keychron K2 Pro - Bàn phím cơ không dây, Gateron G Pro Red',     price: 2890000,  imageUrl: 'https://picsum.photos/seed/keychron/400/400',       stock: 250 },
+    { name: 'LG 27UK850-W',            description: 'LG 27" 4K UHD IPS Monitor, USB-C 60W, HDR400',                   price: 11990000, imageUrl: 'https://picsum.photos/seed/lgmonitor/400/400',      stock: 60  },
+    { name: 'Anker 737 Power Bank',    description: 'Anker 737 Power Bank 24000mAh, sạc nhanh 140W',                  price: 1990000,  imageUrl: 'https://picsum.photos/seed/anker/400/400',          stock: 400 },
+
+    // Smart Home & Wearables
+    { name: 'Apple Watch Series 9',    description: 'Apple Watch Series 9 GPS 45mm Midnight Aluminum',                 price: 11990000, imageUrl: 'https://picsum.photos/seed/awseries9/400/400',      stock: 90  },
+    { name: 'Xiaomi Smart Band 8 Pro', description: 'Xiaomi Smart Band 8 Pro - AMOLED 1.74", GPS, SpO2, 14 ngày pin',  price: 1290000,  imageUrl: 'https://picsum.photos/seed/miband8/400/400',        stock: 500 },
   ];
 
   const createdProducts = await Promise.all(
@@ -70,10 +94,10 @@ async function main() {
   // Flash sale ACTIVE (đang diễn ra)
   const flashSaleActive = await prisma.flashSale.create({
     data: {
-      productId: allProducts[0].id, // iPhone 15 Pro
+      productId: allProducts[0].id, // iPhone 15 Pro (index 0)
       discountPrice: 24990000,
-      maxQty: 50,
-      soldQty: 12,
+      maxQty: 5,
+      soldQty: 0,
       startAt: new Date(now.getTime() - 60 * 60 * 1000), // 1 giờ trước
       endAt: new Date(now.getTime() + 2 * 60 * 60 * 1000), // 2 giờ sau
       status: FlashSaleStatus.ACTIVE,
@@ -83,8 +107,8 @@ async function main() {
   // Flash sale UPCOMING (sắp diễn ra)
   const flashSaleUpcoming = await prisma.flashSale.create({
     data: {
-      productId: allProducts[1].id, // Samsung Galaxy S24
-      discountPrice: 19990000,
+      productId: allProducts[1].id, // iPhone 14 (index 1)
+      discountPrice: 15990000,
       maxQty: 30,
       soldQty: 0,
       startAt: new Date(now.getTime() + 24 * 60 * 60 * 1000), // ngày mai
@@ -96,8 +120,8 @@ async function main() {
   // Flash sale ENDED (đã kết thúc)
   const flashSaleEnded = await prisma.flashSale.create({
     data: {
-      productId: allProducts[2].id, // Sony WH-1000XM5
-      discountPrice: 4990000,
+      productId: allProducts[2].id, // Samsung Galaxy S24 Ultra (index 2)
+      discountPrice: 24990000,
       maxQty: 20,
       soldQty: 20,
       startAt: new Date(now.getTime() - 48 * 60 * 60 * 1000), // 2 ngày trước
@@ -106,7 +130,7 @@ async function main() {
     },
   });
 
-  console.log(`✅ FlashSales: ACTIVE (iPhone), UPCOMING (Samsung), ENDED (Sony)`);
+  console.log(`✅ FlashSales: ACTIVE (iPhone 15 Pro), UPCOMING (iPhone 14), ENDED (Samsung Galaxy S24 Ultra)`);
 
   // ─────────────────────────────────────────
   // 4. ORDERS
